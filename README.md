@@ -1,5 +1,5 @@
 # stream-dsa
-## Prerequisites: Intel DML library 
+## Prerequisites: Intel Data Mover Library (DML) 
 
 This repository shows techniques that complement the strengths of Intel DSA in combination with CPUs to accelerate memory-bound/STREAM kernels (i.e., operations where performance is primarily determined by how fast the memory subsystem can deliver the data operands for computations to the CPU cores).
 
@@ -23,8 +23,12 @@ Below figure shows the workflow of the hybrid CPU + Intel DSA pipelining approac
 ![f2-sample-pipeline-data-operations-hybrid-cpu](https://github.com/user-attachments/assets/07a6e6c7-c3d4-40ad-9f3f-5a7f906a9d42)
 
 ## Performance
-Performance at various core counts on a 4th Gen Intel Xeon Scalable Processor (56-cores, 8-channel DDR5@4800MT/s, theoretical peak bandwidth is 8 channels x 8 bytes x 4.8 GT/s = 307 GB/s) is shown below. Intel DSA+CPU speedup over the CPU-only implementation is color-coded as a heatmap.
+Intel® Data Mover Library (Intel® DML) is an open source library providing C/C++ API’s to execute data operations using Intel DSA. Intel DML is used to initialize DSA device, create work descriptors, submit and query job status for STREAM kernels. Performance at various core counts on a 4th Gen Intel Xeon Scalable Processor (56-cores, 8-channel DDR5@4800MT/s, theoretical peak bandwidth is 8 channels x 8 bytes x 4.8 GT/s = 307 GB/s) is shown below. Intel DSA+CPU speedup over the CPU-only implementation is color-coded as a heatmap.
 
 ![f5-performance-comparison-cpu-hybrid](https://github.com/user-attachments/assets/c898cc3d-7845-4dae-b772-70b6dd496175)
 
-For more details, refer to the technical article at https://www.intel.com/content/www/us/en/developer/articles/technical/accelerate-memory-bandwidth-bound-kernels-with-dsa.html
+1-core CPU memory performance is determined by the size of the architectural load/store buffers, whereas Intel DSA does not have this limitation. So, in the hybrid CPU + Intel DSA method, as the Intel DSA copies data from DRAM to LLC in a pipelined manner, all the data read by the CPUs will be hit in LLC. This reduces the amount of time that memory requests reside in the load/store queues as they now are held only to meet LLC hit latency over DRAM access latency. This results in 1-core bandwidth gains of 1.6x to 2x depending on the kernel type.
+
+At lower core counts (<4), even though the CPU is reading from LLC, the time taken to process a block of data from LLC is greater than the time the Intel DSA takes to fetch a block from DRAM. So, we get higher gains at lower core counts as we are entirely hiding the DRAM latency. As we add more CPU cores to the workflow, CPU read bandwidth from LLC is faster than Intel DSA and now CPUs are waiting for Intel DSA to finish the copies to LLC. To mitigate this issue, we use two different implementations depending on how many cores are being used. At higher core counts, there is greater contention at Intel DSA queues when there are too many outstanding requests. So, we switch to a different implementation such that the CPU also handles some memory requests along with Intel DSA. For Triad and Dot, we use the CPU as well to fetch one of the input buffers (src1) while the Intel DSA fetches the other input buffers (src2). This has the following benefits at higher core counts. First, it puts the CPU to work instead of waiting for Intel DSA to finish copying from DRAM to LLC. Second, since DSA is required to only fetch one buffer from DRAM to LLC, the number of outstanding DSA requests is cut in half, which reduces contention at the Intel DSA queues. Overall, the performance benefits of Intel DSA + CPU method gradually decrease as we increase the number of cores.
+
+Refer to the full technical article at https://www.intel.com/content/www/us/en/developer/articles/technical/accelerate-memory-bandwidth-bound-kernels-with-dsa.html
