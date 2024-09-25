@@ -22,6 +22,10 @@ Below figure shows the workflow of the hybrid CPU + Intel DSA pipelining approac
 
 ![f2-sample-pipeline-data-operations-hybrid-cpu](https://github.com/user-attachments/assets/07a6e6c7-c3d4-40ad-9f3f-5a7f906a9d42)
 
+Below is the state-diagram of main loop with a circular temp buffer of depth 4 – 
+
+![image](https://github.com/user-attachments/assets/e198da78-1540-4aef-b614-85c75e8d0852)
+
 ## Performance
 Intel® Data Mover Library (Intel® DML) is an open source library providing C/C++ API’s to execute data operations using Intel DSA. Intel DML is used to initialize DSA device, create work descriptors, submit and query job status for STREAM kernels. Performance at various core counts on a 4th Gen Intel Xeon Scalable Processor (56-cores, 8-channel DDR5@4800MT/s, theoretical peak bandwidth is 8 channels x 8 bytes x 4.8 GT/s = 307 GB/s) is shown below. Intel DSA+CPU speedup over the CPU-only implementation is color-coded as a heatmap.
 
